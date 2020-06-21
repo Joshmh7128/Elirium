@@ -1,5 +1,0 @@
-sceneSetups:
-- path: Assets/Scenes/Concept Scenes/Blue Caves Concept Scene.unity
-  isLoaded: 1
-  isActive: 1
-  isSubScene: 0
