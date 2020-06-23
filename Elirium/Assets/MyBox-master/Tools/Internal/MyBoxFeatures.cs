@@ -59,7 +59,7 @@ namespace MyBox.Internal
 			{
 				{
 					MyBoxSettings.CleanEmptyDirectoriesFeature = value;
-					CleanEmptyDirectoriesFeature.IsEnabled = value;
+					CleanEmptyDirectoriesFeature.IsEnabled = false;
 				}
 			}
 		}
