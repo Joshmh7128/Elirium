@@ -31,7 +31,7 @@ public class PlayerController : MonoBehaviour
     [Tooltip("Can the player move?")] public bool playerCanMove = true;
     [Tooltip("The default (walking) speed for the player"), Range(1, 25)] public int defaultSpeed = 5;
     [Tooltip("The sprinting speed for the player"), Range(1, 25)] public int sprintSpeed = 7;
-    [Tooltip("The jumping force for the player"), Range(1, 25)] public int jumpForce = 5;
+    [Tooltip("The jumping force for the player"), Range(20, 100)] public int jumpForce = 75;
 
     /// <summary>
     /// Container class for crouching options. Contains separate jump force, walk speed, sprint speed, and others.
@@ -55,7 +55,7 @@ public class PlayerController : MonoBehaviour
 
     private Rigidbody rb;
 
-    private const float jumpRayLength = 0.5f;
+    private const float jumpRayLength = 2.25f;
 
     /// <summary>
     /// The current speed that the player's movement is multiplied by. Changes if the player is crouching, used when walking
@@ -182,13 +182,15 @@ public class PlayerController : MonoBehaviour
             movement *= speedInternal;
         }
 
-        if (rewiredInput.GetAxis(jumpAxis) != 0)
+        Debug.DrawRay(transform.position, -transform.up * jumpRayLength);
+        if (rewiredInput.GetAxis(jumpAxis) != 0 && Physics.Raycast(transform.position, -transform.up, jumpRayLength))
         {
-            movement.y = rewiredInput.GetAxis(jumpAxis) * jumpForceInternal;
+            //movement.y = rewiredInput.GetAxis(jumpAxis) * jumpForceInternal;
+            rb.AddForce(transform.up * jumpForceInternal * 15, ForceMode.Impulse);
         }
         else
         {
-            movement.y = rb.velocity.y;
+            movement.y = rb.velocity.y - 9.8f * 4 * Time.deltaTime;
         }
     }
 
