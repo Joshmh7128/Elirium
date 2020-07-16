@@ -16,6 +16,8 @@ public class AnimPuzzleScript : PuzzlePartScript
     // Start is called before the first frame update
     protected override void Start()
     {
+        base.Start();
+
         animator = gameObject.GetComponent<Animator>();
 
         // Adds the animation bools to the list for internal use
@@ -26,10 +28,10 @@ public class AnimPuzzleScript : PuzzlePartScript
         animBoolList.Add("purple");
     }
 
-    protected override void Update()
+    /*protected override void Update()
     {
 
-    }
+    }*/
 
     /// <summary>
     /// 
@@ -43,11 +45,13 @@ public class AnimPuzzleScript : PuzzlePartScript
         {
             // Passes the information to the animator attached to this puzzlePart
             animator.SetBool(animBoolList[activateColor], true);
+            SetColor(activateColor);
         }
         else if (!isActivated) // Using animation system and ball leaving pedestal
         {
-            // Passes teh information to the animator attached to this puzzlePart
+            // Passes the information to the animator attached to this puzzlePart
             animator.SetBool(animBoolList[activateColor], false);
+            SetColor(0);
         }
     }
 }

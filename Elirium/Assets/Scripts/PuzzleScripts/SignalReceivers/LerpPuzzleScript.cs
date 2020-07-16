@@ -83,6 +83,8 @@ public class LerpPuzzleScript : PuzzlePartScript
     // Start is called before the first frame update
     protected override void Start()
     {
+        base.Start();
+
         // Add the lerp actions to the list for internal use
         lerpActions.Add(whiteLerpAction);
         lerpActions.Add(redLerpAction);
@@ -113,6 +115,7 @@ public class LerpPuzzleScript : PuzzlePartScript
         {
             // Updates the external (current) orb in the pedestal
             colorExternal = activateColor;
+            SetColor(activateColor);
             if (transform.position == startPos) // If in the default position
             {
                 // Updates the internal (movement target) orb color
@@ -122,12 +125,15 @@ public class LerpPuzzleScript : PuzzlePartScript
         else // No orb is in the pedestal or the current orb has no associated action
         {
             colorExternal = 0; // Indicates that there is nothing in the pedestal
+            SetColor(0);
         }
     }
 
     // Update is called once per frame
     protected override void Update()
     {
+        base.Update();
+
         if (Vector3.Distance(transform.position, target) > .1) // If the target is not ~= the current position
         {
             // Updates distTraveled and lerpFraction based on the time, speed, and distance variables, used in the lerp

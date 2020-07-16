@@ -32,8 +32,13 @@ public class PlayerPlatformAttach : MonoBehaviour
     {
         if (other.gameObject == Player || other.GetComponent<Orb_PuzzleScript>())
         {
-			if(other.transform.parent == transform)
-				other.transform.parent = null;
+            if (other.transform.parent == transform && other.gameObject == Player)
+            {
+                other.transform.parent = null;
+                DontDestroyOnLoad(Player);
+            }
+            else if (other.transform.parent == transform)
+                other.transform.parent = null;
         }
     }
 }
