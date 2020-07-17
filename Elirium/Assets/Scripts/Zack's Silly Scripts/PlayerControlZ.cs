@@ -32,9 +32,10 @@ public class PlayerControlZ : MonoBehaviour
     [Tooltip("The default (walking) speed for the player"), Range(1, 25)] public int defaultSpeed = 5;
     [Tooltip("The sprinting speed for the player"), Range(1, 25)] public int sprintSpeed = 7;
     [Tooltip("The jumping height for the player"), Range(1, 5)] public float jumpHeight = 4f;
-    [Tooltip("The maximum vertical velocity for the player"), Range(25, 100)] public int terminalVelocity = 50;
+    [Tooltip("The maximum vertical velocity for the player"), Range(-25, -100)] public int terminalVelocity = -50;
 
     public Transform groundCheck;
+    public LayerMask groundMask;
 
     public Transform ceilingCheck;
 
@@ -85,6 +86,11 @@ public class PlayerControlZ : MonoBehaviour
 
     private float xInput;
     private float yInput;
+
+    private bool isGrounded;
+    private bool wasGrounded;
+
+    private float stepOffsetInternal;
     #endregion
 
     #endregion
@@ -117,6 +123,10 @@ public class PlayerControlZ : MonoBehaviour
         jumpHeightInternal = jumpHeight;
 
         controller = GetComponent<CharacterController>();
+
+        stepOffsetInternal = controller.stepOffset;
+
+        wasGrounded = false;
         #endregion
     }
 
@@ -164,13 +174,37 @@ public class PlayerControlZ : MonoBehaviour
         transform.rotation = Quaternion.Euler(0f, followAngles.y + originalRotation.y, 0);
         compass.transform.rotation = Quaternion.Euler(0, 0, 0);
         #endregion
+
+        isGrounded = Physics.CheckSphere(groundCheck.position, 0.49f, groundMask);
+
+        if (!isGrounded)
+        {
+            controller.stepOffset = 0;
+            if (wasGrounded && movement.y < 0)
+            {
+                movement.y = 0;
+            }
+        }
+        else
+        {
+            if (movement.y < 0)
+            {
+                controller.stepOffset = stepOffsetInternal;
+            }
+        }
+
+        wasGrounded = isGrounded;
+
+        if (Physics.CheckSphere(ceilingCheck.position, 0.05f, groundMask) && movement.y > 0)
+        {
+            movement.y = 0;
+        }
     }
     
     private void FixedUpdate()
     {
         GetMovementInput();
         ProcessMovementInput();
-
     }
 
     private void GetMovementInput()
@@ -193,7 +227,7 @@ public class PlayerControlZ : MonoBehaviour
             movement.z *= speedInternal;
         }
 
-        if (/*rewiredInput.GetAxis(jumpAxis) != 0*/ Input.GetKeyDown("space"))
+        if (rewiredInput.GetAxis(jumpAxis) != 0 && isGrounded && movement.y < 0)
         {
             movement.y = Mathf.Sqrt(jumpHeightInternal * -2f * gravity);
         }
@@ -202,6 +236,7 @@ public class PlayerControlZ : MonoBehaviour
     private void ProcessMovementInput()
     {
         movement.y += gravity / 50;
+        movement.y = Mathf.Max(movement.y, terminalVelocity);
         controller.Move(movement / 50);
     }
     
