@@ -14,7 +14,15 @@ public class PlayerPlatformAttach : MonoBehaviour
 
     private void Start()
     {
-        Player = GameObject.Find("Player");
+        Player = GameObject.Find("PlayerZ");
+    }
+
+    private void OnTriggerStay(CharacterController other)
+    {
+        if (other.transform.parent == null)
+        {
+            other.transform.parent = transform;
+        }
     }
 
 	private void OnTriggerStay(Collider other)

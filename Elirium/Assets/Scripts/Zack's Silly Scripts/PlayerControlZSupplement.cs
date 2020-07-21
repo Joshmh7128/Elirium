@@ -18,6 +18,7 @@ public class PlayerControlZSupplement : MonoBehaviour
         transform.Rotate(Vector3.up * playerTransform.eulerAngles.y * -1);
     }
 
+    // Rename this to "GetLocalAngleOffset" or similar, needs more descriptive name
     public Vector3 Thang(float angle, float x, float z)
     {
         theta = angle * Mathf.Deg2Rad;
