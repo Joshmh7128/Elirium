@@ -5,7 +5,7 @@ using UnityEngine;
 public class PlayerPlatformAttach : MonoBehaviour
 {
     public GameObject Player;
-	private List<GameObject> _children;
+	private List<GameObject> _children = new List<GameObject>();
 
     private void Awake()
     {
@@ -24,6 +24,7 @@ public class PlayerPlatformAttach : MonoBehaviour
 			if (other.transform.parent == null)
 			{
 				other.transform.parent = transform;
+                _children.Add(other.gameObject);
 			}
         }
     }
@@ -36,9 +37,27 @@ public class PlayerPlatformAttach : MonoBehaviour
             {
                 other.transform.parent = null;
                 DontDestroyOnLoad(Player);
+                _children.Remove(other.gameObject);
             }
             else if (other.transform.parent == transform)
                 other.transform.parent = null;
+            _children.Remove(other.gameObject);
         }
+    }
+
+    /// <summary>
+    /// Detaches all children from this object
+    /// </summary>
+    public void Detach()
+    {
+        foreach (GameObject child in _children)
+        {
+            Debug.Log("Detach " + child.name);
+            child.transform.parent = null;
+            if (child == Player)
+                DontDestroyOnLoad(Player);
+        }
+
+        _children = new List<GameObject>();
     }
 }
