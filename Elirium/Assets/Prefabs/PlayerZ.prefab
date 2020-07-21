@@ -55,6 +55,8 @@ GameObject:
   - component: {fileID: 4442184576455069426}
   - component: {fileID: 4442184576455069439}
   - component: {fileID: 4442184576455069427}
+  - component: {fileID: 7740988638771299952}
+  - component: {fileID: 1086477219969764306}
   m_Layer: 0
   m_Name: PlayerZ
   m_TagString: Untagged
@@ -139,6 +141,36 @@ MonoBehaviour:
   mouseSensitivity: 0.75
   playerCamera: {fileID: 4442184576607195676}
   targetAngles: {x: 0, y: 0, z: 0}
+--- !u!136 &7740988638771299952
+CapsuleCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4442184576455069438}
+  m_Material: {fileID: 0}
+  m_IsTrigger: 1
+  m_Enabled: 1
+  m_Radius: 0.5
+  m_Height: 4.2
+  m_Direction: 1
+  m_Center: {x: 0, y: -0.05, z: 0}
+--- !u!54 &1086477219969764306
+Rigidbody:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4442184576455069438}
+  serializedVersion: 2
+  m_Mass: 1
+  m_Drag: 0
+  m_AngularDrag: 0.05
+  m_UseGravity: 0
+  m_IsKinematic: 1
+  m_Interpolate: 0
+  m_Constraints: 0
+  m_CollisionDetection: 0
 --- !u!1 &4442184576607195675
 GameObject:
   m_ObjectHideFlags: 0
@@ -150,7 +182,6 @@ GameObject:
   - component: {fileID: 4442184576607195676}
   - component: {fileID: 4442184576607195679}
   - component: {fileID: 4442184576607195678}
-  - component: {fileID: 4442184576607195677}
   m_Layer: 0
   m_Name: Main Camera
   m_TagString: MainCamera
@@ -223,21 +254,6 @@ AudioListener:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 4442184576607195675}
   m_Enabled: 1
---- !u!114 &4442184576607195677
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 4442184576607195675}
-  m_Enabled: 0
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: cdcd06815c47d30489f70df42db56a48, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  frustumSettings:
-    baseSettings: {fileID: 0}
-    qualitySettings: {fileID: 0}
 --- !u!1 &4442184576963266102
 GameObject:
   m_ObjectHideFlags: 0

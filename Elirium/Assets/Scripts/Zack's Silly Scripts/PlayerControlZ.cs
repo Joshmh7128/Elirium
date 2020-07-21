@@ -175,6 +175,12 @@ public class PlayerControlZ : MonoBehaviour
         compass.transform.rotation = Quaternion.Euler(0, 0, 0);
         #endregion
 
+
+    }
+    
+    private void FixedUpdate()
+    {
+        GetMovementInput();
         isGrounded = Physics.CheckSphere(groundCheck.position, 0.49f, groundMask);
 
         if (!isGrounded)
@@ -199,12 +205,9 @@ public class PlayerControlZ : MonoBehaviour
         {
             movement.y = 0;
         }
-    }
-    
-    private void FixedUpdate()
-    {
-        GetMovementInput();
         ProcessMovementInput();
+
+
     }
 
     private void GetMovementInput()

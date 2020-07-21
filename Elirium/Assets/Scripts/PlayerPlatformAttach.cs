@@ -17,15 +17,7 @@ public class PlayerPlatformAttach : MonoBehaviour
         Player = GameObject.Find("PlayerZ");
     }
 
-    private void OnTriggerStay(CharacterController other)
-    {
-        if (other.transform.parent == null)
-        {
-            other.transform.parent = transform;
-        }
-    }
-
-	private void OnTriggerStay(Collider other)
+	private void OnTriggerEnter(Collider other)
     {
         if (other.gameObject == Player || other.GetComponent<Orb_PuzzleScript>())
         {
