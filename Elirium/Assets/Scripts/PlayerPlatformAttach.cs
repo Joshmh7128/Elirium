@@ -52,7 +52,6 @@ public class PlayerPlatformAttach : MonoBehaviour
     {
         foreach (GameObject child in _children)
         {
-            Debug.Log("Detach " + child.name);
             child.transform.parent = null;
             if (child == Player)
                 DontDestroyOnLoad(Player);
