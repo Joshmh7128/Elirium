@@ -120,9 +120,9 @@ MonoBehaviour:
   sprintAxis: sprint
   jumpAxis: jump
   playerCanMove: 1
-  defaultSpeed: 5
-  sprintSpeed: 7
-  jumpHeight: 4
+  defaultSpeed: 8
+  sprintSpeed: 20
+  jumpHeight: 2
   terminalVelocity: -50
   groundCheck: {fileID: 4442184577722273590}
   groundMask:
@@ -131,14 +131,14 @@ MonoBehaviour:
   ceilingCheck: {fileID: 4442184577126446900}
   compass: {fileID: 4442184575782093498}
   supplement: {fileID: 4442184575782093499}
-  gravity: -9.81
+  gravity: -30
   crouching:
     crouchInputAxis: crouch
     crouchSizeModifier: 0.7
     crouchWalkSpeed: 5
     crouchSprintSpeed: 5
     crouchJumpHeight: 1
-  mouseSensitivity: 0.75
+  mouseSensitivity: 0.4
   playerCamera: {fileID: 4442184576607195676}
   targetAngles: {x: 0, y: 0, z: 0}
 --- !u!136 &7740988638771299952
@@ -197,7 +197,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 4442184576607195675}
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0, y: 0.65, z: 0.464}
+  m_LocalPosition: {x: 0, y: 0.65, z: 0.15}
   m_LocalScale: {x: 1, y: 0.5, z: 1}
   m_Children: []
   m_Father: {fileID: 4442184576455069426}
