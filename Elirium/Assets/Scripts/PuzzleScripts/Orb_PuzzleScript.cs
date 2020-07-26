@@ -22,7 +22,7 @@ public class Orb_PuzzleScript : PuzzlePartScript
         orbRigidBody = gameObject.GetComponent<Rigidbody>();
 
         //define where the object is going to go if it's held
-        //holdPoint = GameObject.Find("Hold Point Player").GetComponent<Transform>();
+        holdPoint = GameObject.Find("Hold Point Player").GetComponent<Transform>();
 
         //set our starting position to the very first position recorded by the game
         startPos = transform.position;
