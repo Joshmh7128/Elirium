@@ -33,17 +33,13 @@ public class PlayerControlZ : MonoBehaviour
     [Tooltip("The sprinting speed for the player"), Range(1, 25)] public int sprintSpeed = 7;
     [Tooltip("The jumping height for the player"), Range(1, 5)] public float jumpHeight = 4f;
     [Tooltip("The maximum vertical velocity for the player"), Range(-25, -100)] public int terminalVelocity = -50;
-
-    public Transform groundCheck;
-    public LayerMask groundMask;
-
-    public Transform ceilingCheck;
-
-    public Transform compass;
-    public PlayerControlZSupplement supplement;
-
-    [SerializeField]private float gravity = -37.5f;
-
+    [Tooltip("The location used to determine if the player is grounded.")] public Transform groundCheck;
+    [Tooltip("The layers of objects that the controller will recognize as ground objects.")] public LayerMask groundMask;
+    [Tooltip("The location used to determine if the player has hit the ceiling.")] public Transform ceilingCheck;
+    [Tooltip("Affects the rate at which the player accelerates downward."), Range(-10, -100)] public float gravity = -37.5f;
+    [Tooltip("Affects the rate at which the player's velocity is changed due to player input. Lower values means momentum is conserved more.")] public float interpolationFactor;
+    [Tooltip("Affects the speed that the player will slide down walls."), Range(0, 1)] public float slideFriction;
+    
     /// <summary>
     /// Container class for crouching options. Contains separate jump height, sprint speed, and others.
     /// </summary>
@@ -77,19 +73,48 @@ public class PlayerControlZ : MonoBehaviour
     /// </summary>
     private float jumpHeightInternal;
     /// <summary>
-    /// The current movement vector, determined by the x and y inputs from the keyboard/controller.
+    /// The direction of the player's desired movement, determined by the x and y inputs from the keyboard/controller.
+    /// </summary>
+    private Vector3 move;
+    /// <summary>
+    /// Similar to the previous Vector, except this is lerped to create smoother movement.
+    /// </summary>
+    private Vector3 horizontalMomentum;
+    /// <summary>
+    /// The player's current velocity (under most circumstances). The y value will be incorrect while grounded, otherwise this is the vector used to move the character.
     /// </summary>
     private Vector3 movement;
-
+    /// <summary>
+    /// Used to modify the previous vector in certain circumstances (such as sliding on slopes) while keeping those values intact.
+    /// </summary>
+    private Vector3 finalMovement;
+    /// <summary>
+    /// Variables that hold the inputs from the mouse, used to look around.
+    /// </summary>
     private float mouseXInput;
     private float mouseYInput;
-
+    /// <summary>
+    /// Variables that hold inputs for the player to move.
+    /// </summary>
     private float xInput;
     private float yInput;
-
+    /// <summary>
+    /// Booleans that return true if the player is or was grounded. Can be used in tandem to determine the frame the player leaves or lands on the ground.
+    /// </summary>
     private bool isGrounded;
     private bool wasGrounded;
-
+    /// <summary>
+    /// Holds information from raycasts and spherecasts shot at the ground. Used to determine the angle of the ground the player is standing on.
+    /// </summary>
+    private RaycastHit groundHit;
+    /// <summary>
+    /// Booleans that return true if the player is or was sliding.
+    /// </summary>
+    private bool isSliding;
+    private bool wasSliding;
+    /// <summary>
+    /// Holds the value of the stepOffset from the character controller. The controller's value is changed, so this is used to "remember" the original value.
+    /// </summary>
     private float stepOffsetInternal;
     #endregion
 
@@ -110,6 +135,7 @@ public class PlayerControlZ : MonoBehaviour
     private Vector3 originalRotation;
     #endregion
     #endregion
+
 
     private void Awake()
     {
@@ -172,16 +198,17 @@ public class PlayerControlZ : MonoBehaviour
         followAngles = Vector3.SmoothDamp(followAngles, targetAngles, ref followVelocity, 0.05f);
         playerCamera.localRotation = Quaternion.Euler(-followAngles.x + originalRotation.x, 0, 0);
         transform.rotation = Quaternion.Euler(0f, followAngles.y + originalRotation.y, 0);
-        compass.transform.rotation = Quaternion.Euler(0, 0, 0);
         #endregion
 
-
-    }
-    
-    private void FixedUpdate()
-    {
-        GetMovementInput();
+        #region Move Update
         isGrounded = Physics.CheckSphere(groundCheck.position, 0.49f, groundMask);
+        isGrounded = Physics.SphereCast(groundCheck.position + Vector3.up, 0.49f, Vector3.down, out groundHit, 1, groundMask);
+        Physics.Raycast(groundHit.point + new Vector3(0, .1f, 0), Vector3.down, out groundHit, 0.15f, groundMask);
+        isSliding = false;
+        if (isGrounded && movement.y <= 0)
+        {
+            isSliding = Vector3.Angle(Vector3.up, groundHit.normal) > controller.slopeLimit;
+        }
 
         if (!isGrounded)
         {
@@ -206,41 +233,59 @@ public class PlayerControlZ : MonoBehaviour
             movement.y = 0;
         }
         ProcessMovementInput();
-
-
-    }
-
-    private void GetMovementInput()
-    {
-        xInput = rewiredInput.GetAxis(horizontalMovementAxis);
-        yInput = rewiredInput.GetAxis(verticalMovementAxis);
-
-        movement.x = 0;
-        movement.z = 0;
-        movement += supplement.Thang(followAngles.y, xInput, yInput);
-
-        if (rewiredInput.GetAxis(sprintAxis) != 0)
-        {
-            movement.x *= sprintSpeedInternal;
-            movement.z *= sprintSpeedInternal;
-        }
-        else
-        {
-            movement.x *= speedInternal;
-            movement.z *= speedInternal;
-        }
-
-        if (rewiredInput.GetAxis(jumpAxis) != 0 && isGrounded && movement.y < 0)
-        {
-            movement.y = Mathf.Sqrt(jumpHeightInternal * -2f * gravity);
-        }
+        #endregion
     }
 
     private void ProcessMovementInput()
     {
-        movement.y += gravity / 50;
+        if (wasSliding && !isSliding && movement.y <= 0)
+        {
+            movement = finalMovement;
+            horizontalMomentum = new Vector3(finalMovement.x, 0, finalMovement.z) / speedInternal;
+        }
+
+        xInput = rewiredInput.GetAxis(horizontalMovementAxis);
+        yInput = rewiredInput.GetAxis(verticalMovementAxis);
+        
+        move = (new Vector3(1, 0, 0) * (xInput * Mathf.Cos(followAngles.y * Mathf.Deg2Rad) + yInput * Mathf.Sin(followAngles.y * Mathf.Deg2Rad))) + (new Vector3(0, 0, 1) * (yInput * Mathf.Cos(followAngles.y * Mathf.Deg2Rad) + xInput * Mathf.Cos(followAngles.y * Mathf.Deg2Rad + Mathf.PI / 2)));
+
+        horizontalMomentum = Vector3.Lerp(horizontalMomentum, move, interpolationFactor * Time.deltaTime);
+
+        if (rewiredInput.GetAxis(sprintAxis) != 0)
+        {
+            movement.x = horizontalMomentum.x * sprintSpeedInternal;
+            movement.z = horizontalMomentum.z * sprintSpeedInternal;
+        }
+        else
+        {
+            movement.x = horizontalMomentum.x * speedInternal;
+            movement.z = horizontalMomentum.z * speedInternal;
+        }
+
+        if (rewiredInput.GetAxis(jumpAxis) != 0 && isGrounded && movement.y < 0 && !isSliding)
+        {
+            movement.y = Mathf.Sqrt(jumpHeightInternal * -2f * gravity);
+        }
+
+        movement.y += gravity * Time.deltaTime;
         movement.y = Mathf.Max(movement.y, terminalVelocity);
-        controller.Move(movement / 50);
+
+        if (isSliding)
+        {
+            Vector3 slopeDirection = Quaternion.Euler(0, -90, 0) * Vector3.Normalize(new Vector3(groundHit.normal.x, 0, groundHit.normal.z));
+            Vector3 horizontalStuff = new Vector3(movement.x, 0, movement.z);
+            finalMovement = Vector3.Normalize(Vector3.RotateTowards(horizontalStuff, slopeDirection, Mathf.PI, 0)) * Vector3.Magnitude(horizontalStuff) * Mathf.Cos(Vector3.Angle(horizontalStuff, slopeDirection) * Mathf.Deg2Rad);
+            
+            finalMovement += Vector3.RotateTowards(groundHit.normal, Vector3.down, Mathf.PI / 2, 0) * -1 * slideFriction * movement.y;
+        }
+        else
+        {
+            finalMovement = movement;
+        }
+
+        controller.Move(finalMovement * Time.deltaTime);
+
+        wasSliding = isSliding;
     }
     
     public void ResetPos(Vector3 pos)
