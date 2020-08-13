@@ -177,6 +177,11 @@ public class PlayerControlZ : MonoBehaviour
         Cursor.lockState = CursorLockMode.Locked; Cursor.visible = false;
     }
 
+    private void OnDrawGizmos()
+    {
+        Gizmos.DrawWireSphere(groundCheck.position, 0.49f);
+    }
+
     // Update is called once per frame
     private void Update()
     {
