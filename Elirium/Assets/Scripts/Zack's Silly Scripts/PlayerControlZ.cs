@@ -28,7 +28,7 @@ public class PlayerControlZ : MonoBehaviour
     [Space(10, order = 4)]
 
     #region External Variables
-    [Tooltip("Can the player move?")] public bool playerCanMove = true;
+    [Tooltip("Can the player move?"), SerializeField] private bool playerCanMove = true;
     [Tooltip("The default (walking) speed for the player"), Range(1, 25)] public int defaultSpeed = 5;
     [Tooltip("The sprinting speed for the player"), Range(1, 25)] public int sprintSpeed = 7;
     [Tooltip("The jumping height for the player"), Range(1, 5)] public float jumpHeight = 4f;
@@ -59,7 +59,12 @@ public class PlayerControlZ : MonoBehaviour
 
     #region Internal Variables
     private CharacterController controller;
-    
+
+    /// <summary>
+    /// A variable the script uses to enable/disable player movement.
+    /// </summary>
+    [HideInInspector] public bool playerCanMoveInternal;
+
     /// <summary>
     /// The current speed that the player's movement is multiplied by. Changes if the player is crouching, used when walking
     /// </summary>
@@ -101,7 +106,7 @@ public class PlayerControlZ : MonoBehaviour
     /// <summary>
     /// Booleans that return true if the player is or was grounded. Can be used in tandem to determine the frame the player leaves or lands on the ground.
     /// </summary>
-    private bool isGrounded;
+    [HideInInspector] public bool isGrounded;
     private bool wasGrounded;
     /// <summary>
     /// Holds information from raycasts and spherecasts shot at the ground. Used to determine the angle of the ground the player is standing on.
@@ -134,16 +139,25 @@ public class PlayerControlZ : MonoBehaviour
     private Vector3 followVelocity;
     private Vector3 originalRotation;
     #endregion
+
+    /// <summary>
+    /// Variable that is true if the game is paused. If true, this script basically stops working until it is false.
+    /// </summary>
+    [HideInInspector] public bool gameIsPaused = false;
     #endregion
 
 
     private void Awake()
     {
+        gameIsPaused = false;
+
         #region Look Awake
         originalRotation = transform.localRotation.eulerAngles;
         #endregion
 
         #region Movement Awake
+        playerCanMoveInternal = true;
+
         speedInternal = defaultSpeed;
         sprintSpeedInternal = sprintSpeed;
         jumpHeightInternal = jumpHeight;
@@ -166,74 +180,86 @@ public class PlayerControlZ : MonoBehaviour
     // Update is called once per frame
     private void Update()
     {
-        #region Look Update
-        mouseXInput = rewiredInput.GetAxis(verticalLookAxis);
-        mouseYInput = rewiredInput.GetAxis(horizontalLookAxis);
+        if (!gameIsPaused)
+        {
+            #region Look Update
+            mouseXInput = rewiredInput.GetAxis(verticalLookAxis);
+            mouseYInput = rewiredInput.GetAxis(horizontalLookAxis);
 
-        if (targetAngles.y > 180)
-        {
-            targetAngles.y -= 360;
-            followAngles.y -= 360;
-        }
-        else if (targetAngles.y < -180)
-        {
-            targetAngles.y += 360;
-            followAngles.y += 360;
-        }
-        if (targetAngles.x > 180)
-        {
-            targetAngles.x -= 360;
-            followAngles.x -= 360;
-        }
-        else if (targetAngles.x < -180)
-        {
-            targetAngles.x += 360;
-            followAngles.x += 360;
-        }
+            if (targetAngles.y > 180)
+            {
+                targetAngles.y -= 360;
+                followAngles.y -= 360;
+            }
+            else if (targetAngles.y < -180)
+            {
+                targetAngles.y += 360;
+                followAngles.y += 360;
+            }
+            if (targetAngles.x > 180)
+            {
+                targetAngles.x -= 360;
+                followAngles.x -= 360;
+            }
+            else if (targetAngles.x < -180)
+            {
+                targetAngles.x += 360;
+                followAngles.x += 360;
+            }
 
-        targetAngles.y += mouseYInput * mouseSensitivity;
-        targetAngles.x += mouseXInput * mouseSensitivity;
-        targetAngles.y = Mathf.Clamp(targetAngles.y, -0.5f * Mathf.Infinity, 0.5f * Mathf.Infinity);
-        targetAngles.x = Mathf.Clamp(targetAngles.x, -0.5f * 170, 0.5f * 170);
-        followAngles = Vector3.SmoothDamp(followAngles, targetAngles, ref followVelocity, 0.05f);
-        playerCamera.localRotation = Quaternion.Euler(-followAngles.x + originalRotation.x, 0, 0);
-        transform.rotation = Quaternion.Euler(0f, followAngles.y + originalRotation.y, 0);
-        #endregion
+            if (playerCanMove && playerCanMoveInternal)
+            {
+                targetAngles.y += mouseYInput * mouseSensitivity;
+                targetAngles.x += mouseXInput * mouseSensitivity;
+            }
+            targetAngles.y = Mathf.Clamp(targetAngles.y, -0.5f * Mathf.Infinity, 0.5f * Mathf.Infinity);
+            targetAngles.x = Mathf.Clamp(targetAngles.x, -0.5f * 170, 0.5f * 170);
+            if (!playerCanMoveInternal)
+            {
+                followAngles = Vector3.SmoothDamp(followAngles, targetAngles, ref followVelocity, 0.2f);
+            }
+            else
+            {
+                followAngles = Vector3.SmoothDamp(followAngles, targetAngles, ref followVelocity, 0.05f);
+            }
+            playerCamera.localRotation = Quaternion.Euler(-followAngles.x + originalRotation.x, 0, 0);
+            transform.rotation = Quaternion.Euler(0f, followAngles.y + originalRotation.y, 0);
+            #endregion
 
-        #region Move Update
-        isGrounded = Physics.CheckSphere(groundCheck.position, 0.49f, groundMask);
-        isGrounded = Physics.SphereCast(groundCheck.position + Vector3.up, 0.49f, Vector3.down, out groundHit, 1, groundMask);
-        Physics.Raycast(groundHit.point + new Vector3(0, .1f, 0), Vector3.down, out groundHit, 0.15f, groundMask);
-        isSliding = false;
-        if (isGrounded && movement.y <= 0)
-        {
-            isSliding = Vector3.Angle(Vector3.up, groundHit.normal) > controller.slopeLimit;
-        }
+            #region Move Update
+            isGrounded = Physics.SphereCast(groundCheck.position + Vector3.up, 0.49f, Vector3.down, out groundHit, 1, groundMask);
+            Physics.Raycast(groundHit.point + new Vector3(0, .1f, 0), Vector3.down, out groundHit, 0.15f, groundMask);
+            isSliding = false;
+            if (isGrounded && movement.y <= 0)
+            {
+                isSliding = Vector3.Angle(Vector3.up, groundHit.normal) > controller.slopeLimit;
+            }
 
-        if (!isGrounded)
-        {
-            controller.stepOffset = 0;
-            if (wasGrounded && movement.y < 0)
+            if (!isGrounded)
+            {
+                controller.stepOffset = 0;
+                if (wasGrounded && movement.y < 0)
+                {
+                    movement.y = 0;
+                }
+            }
+            else
+            {
+                if (movement.y < 0)
+                {
+                    controller.stepOffset = stepOffsetInternal;
+                }
+            }
+
+            wasGrounded = isGrounded;
+
+            if (Physics.CheckSphere(ceilingCheck.position, 0.05f, groundMask) && movement.y > 0)
             {
                 movement.y = 0;
             }
+            ProcessMovementInput();
+            #endregion
         }
-        else
-        {
-            if (movement.y < 0)
-            {
-                controller.stepOffset = stepOffsetInternal;
-            }
-        }
-
-        wasGrounded = isGrounded;
-
-        if (Physics.CheckSphere(ceilingCheck.position, 0.05f, groundMask) && movement.y > 0)
-        {
-            movement.y = 0;
-        }
-        ProcessMovementInput();
-        #endregion
     }
 
     private void ProcessMovementInput()
@@ -244,10 +270,18 @@ public class PlayerControlZ : MonoBehaviour
             horizontalMomentum = new Vector3(finalMovement.x, 0, finalMovement.z) / speedInternal;
         }
 
-        xInput = rewiredInput.GetAxis(horizontalMovementAxis);
-        yInput = rewiredInput.GetAxis(verticalMovementAxis);
+        if (playerCanMove && playerCanMoveInternal)
+        {
+            xInput = rewiredInput.GetAxis(horizontalMovementAxis);
+            yInput = rewiredInput.GetAxis(verticalMovementAxis);
+        }
+        else
+        {
+            xInput = 0;
+            yInput = 0;
+        }
         
-        move = (new Vector3(1, 0, 0) * (xInput * Mathf.Cos(followAngles.y * Mathf.Deg2Rad) + yInput * Mathf.Sin(followAngles.y * Mathf.Deg2Rad))) + (new Vector3(0, 0, 1) * (yInput * Mathf.Cos(followAngles.y * Mathf.Deg2Rad) + xInput * Mathf.Cos(followAngles.y * Mathf.Deg2Rad + Mathf.PI / 2)));
+        move = (new Vector3(1, 0, 0) * (xInput * Mathf.Cos(transform.localRotation.eulerAngles.y * Mathf.Deg2Rad) + yInput * Mathf.Sin(transform.localRotation.eulerAngles.y * Mathf.Deg2Rad))) + (new Vector3(0, 0, 1) * (yInput * Mathf.Cos(transform.localRotation.eulerAngles.y * Mathf.Deg2Rad) + xInput * Mathf.Cos(transform.localRotation.eulerAngles.y * Mathf.Deg2Rad + Mathf.PI / 2)));
 
         horizontalMomentum = Vector3.Lerp(horizontalMomentum, move, interpolationFactor * Time.deltaTime);
 
@@ -262,7 +296,7 @@ public class PlayerControlZ : MonoBehaviour
             movement.z = horizontalMomentum.z * speedInternal;
         }
 
-        if (rewiredInput.GetAxis(jumpAxis) != 0 && isGrounded && movement.y < 0 && !isSliding)
+        if (rewiredInput.GetAxis(jumpAxis) != 0 && isGrounded && movement.y < 0 && !isSliding && playerCanMoveInternal)
         {
             movement.y = Mathf.Sqrt(jumpHeightInternal * -2f * gravity);
         }
@@ -290,7 +324,9 @@ public class PlayerControlZ : MonoBehaviour
     
     public void ResetPos(Vector3 pos)
     {
+        gameIsPaused = true;
         transform.position = pos;
+        gameIsPaused = false;
     }
 
     // this script pushes all rigidbodies that the character touches

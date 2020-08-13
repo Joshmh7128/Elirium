@@ -92,9 +92,11 @@ MonoBehaviour:
     crouchWalkSpeed: 5
     crouchSprintSpeed: 5
     crouchJumpHeight: 1
+  playerCanMoveInternal: 0
   mouseSensitivity: 0.4
   playerCamera: {fileID: 4442184576607195676}
   targetAngles: {x: 0, y: 0, z: 0}
+  gameIsPaused: 0
 --- !u!136 &7740988638771299952
 CapsuleCollider:
   m_ObjectHideFlags: 0
@@ -206,6 +208,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 85ba1810c5d3d03458a78e9c96c94d3f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  player: {fileID: 4442184576455069427}
   isHolding: 0
   cameraPos: {fileID: 4442184576607195676}
   throwPower: 5

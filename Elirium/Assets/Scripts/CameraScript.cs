@@ -4,6 +4,7 @@ using UnityEngine;
 
 public class CameraScript : MonoBehaviour
 {
+    public PlayerControlZ player;
     public bool isHolding; //check to see if we're holding something
     public Transform cameraPos;
 	private Orb_PuzzleScript _heldOrb;
@@ -14,57 +15,80 @@ public class CameraScript : MonoBehaviour
     private LayerMask layerMask;
     private RaycastHit hit;            //define our raycast
 
+    #region Some Vectors
+    Vector3 tempVector;
+    Vector3 tempVectorHor;
+    Vector3 tempForward;
+    Vector3 tempVectorVert;
+    #endregion
+
+    DialogueManager dialogueManager;
+
     private void Awake()
     {
         layerMask = 1<<9; //get bitmap
         layerMask = ~layerMask; //invert the layermask
+
+        dialogueManager = FindObjectOfType<DialogueManager>();
     }
 
-    void FixedUpdate()
-    {
-       Vector3.Lerp(transform.position, cameraPos.position, 1f);
-    }
-
-    //cast a raycast forwards and see if we collide with an orb to pickup
+    //cast a spherecast forwards and see if we collide with an orb to pickup (or something else that can be interacted with)
     void Update()
     {
-
-
-		//check to see if it can hit anything
-		if (_heldOrb == null && Physics.Raycast(transform.position, transform.TransformDirection(Vector3.forward), out hit, 5, layerMask)) // If the player is not holding a ball and the ray hits something
-		{
-			//Debug.Log("Hit");
-			Debug.DrawRay(transform.position, transform.TransformDirection(Vector3.forward) * 5, Color.red);
-
-			if ((hit.collider.GetComponent<Orb_PuzzleScript>()) & (Input.GetKeyDown(KeyCode.E))) // If the thing the ray hits is a ball and the player presses e
-			{   //make sure we both make the orb get held and make the camera hold the camera
-				hit.collider.gameObject.GetComponent<Orb_PuzzleScript>().isHeld = !hit.collider.gameObject.GetComponent<Orb_PuzzleScript>().isHeld;
-				isHolding = !isHolding;
-				_heldOrb = hit.collider.gameObject.GetComponent<Orb_PuzzleScript>();
-			}
-		}
-		else if (_heldOrb != null) // If the player is holding a ball
-		{
-			if (Input.GetKeyDown(KeyCode.E)) // If e is pressed, drop the ball
-			{
-				_heldOrb.isHeld = false;
-				isHolding = false;
-				_heldOrb = null;
-			}
-            else if (Input.GetKeyDown(KeyCode.Mouse0)) // If left mouse is clicked, throw the ball
+        if (Input.GetKeyDown(KeyCode.E) && player.playerCanMoveInternal)
+        {
+            if (_heldOrb != null)
             {
                 _heldOrb.isHeld = false;
-                _heldOrb.GetComponent<Rigidbody>().AddForce(transform.TransformDirection(Vector3.forward) * 500 * throwPower);
                 isHolding = false;
                 _heldOrb = null;
             }
-		}
-		else // If the player is not holding a ball and the ray doesn't hit anything
-		{
-			//Debug.Log("No Hit");
-			Debug.DrawRay(transform.position, transform.TransformDirection(Vector3.forward) * 5, Color.yellow);
-		}
+            else if (Physics.SphereCast(transform.position, 0.5f, transform.TransformDirection(Vector3.forward), out hit, 4.5f, layerMask))
+            {
+                if (hit.collider.GetComponent<Orb_PuzzleScript>())
+                {
+                    hit.collider.gameObject.GetComponent<Orb_PuzzleScript>().isHeld = !hit.collider.gameObject.GetComponent<Orb_PuzzleScript>().isHeld;
+                    isHolding = !isHolding;
+                    _heldOrb = hit.collider.gameObject.GetComponent<Orb_PuzzleScript>();
+                }
+                else if (hit.collider.GetComponent<Interactable>())
+                {
+                    hit.collider.GetComponent<Interactable>().Interact();
+                    StartCoroutine(MoveCamera(0.35f, hit));
+                }
+            }
+        }
+        else if (Input.GetKeyDown(KeyCode.Mouse0) && _heldOrb != null)
+        {
+            _heldOrb.isHeld = false;
+            _heldOrb.GetComponent<Rigidbody>().AddForce(transform.TransformDirection(Vector3.forward) * 500 * throwPower);
+            isHolding = false;
+            _heldOrb = null;
+        }
+        else if ((Input.GetKeyDown(KeyCode.E) || Input.GetKeyDown(KeyCode.Mouse0)) && !player.playerCanMoveInternal)
+        {
+            dialogueManager.DisplayNextSentence();
+        }
+    }
 
+    private IEnumerator MoveCamera(float delay, RaycastHit slap)
+    {
+        yield return new WaitForSeconds(0.1f);
 
+        while (!player.isGrounded)
+        {
+            yield return null;
+        }
+        
+        yield return new WaitForSeconds(delay - 0.1f);
+
+        tempVector = Vector3.Normalize(slap.collider.transform.GetChild(0).transform.position - transform.position);
+        tempVectorHor = Vector3.Normalize(new Vector3(tempVector.x, 0, tempVector.z));
+        tempForward = transform.TransformDirection(Vector3.forward);
+        tempVectorVert = tempForward;
+        tempVectorVert.y = tempVector.y;
+
+        player.targetAngles.y += Vector3.SignedAngle(Vector3.Normalize(new Vector3(tempForward.x, 0, tempForward.z)), tempVectorHor, Vector3.up);
+        player.targetAngles.x -= Vector3.SignedAngle(Vector3.Normalize(tempForward), tempVectorVert, transform.TransformDirection(Vector3.right));
     }
 }
