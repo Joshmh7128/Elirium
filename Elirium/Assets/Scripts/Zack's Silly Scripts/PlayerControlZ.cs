@@ -163,6 +163,11 @@ public class PlayerControlZ : MonoBehaviour
         Cursor.lockState = CursorLockMode.Locked; Cursor.visible = false;
     }
 
+    private void OnDrawGizmos()
+    {
+        Gizmos.DrawWireSphere(groundCheck.position, 0.49f);
+    }
+
     // Update is called once per frame
     private void Update()
     {
@@ -201,9 +206,15 @@ public class PlayerControlZ : MonoBehaviour
         #endregion
 
         #region Move Update
-        isGrounded = Physics.CheckSphere(groundCheck.position, 0.49f, groundMask);
-        isGrounded = Physics.SphereCast(groundCheck.position + Vector3.up, 0.49f, Vector3.down, out groundHit, 1, groundMask);
+        //isGrounded = Physics.CheckSphere(groundCheck.position, 0.49f, groundMask);
+        isGrounded = Physics.SphereCast(groundCheck.position /* + Vector3.up*/, 0.49f, Vector3.down, out groundHit, 1, groundMask);
+
+        if (isGrounded) { Debug.Log("grounded"); }
         Physics.Raycast(groundHit.point + new Vector3(0, .1f, 0), Vector3.down, out groundHit, 0.15f, groundMask);
+
+        Collider[] hitColliders = Physics.OverlapSphere(groundCheck.position, 0.49f, groundMask);
+        
+        isGrounded = hitColliders.Length > 0;
         isSliding = false;
         if (isGrounded && movement.y <= 0)
         {
