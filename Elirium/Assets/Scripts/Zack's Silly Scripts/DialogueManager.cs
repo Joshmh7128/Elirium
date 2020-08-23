@@ -21,10 +21,14 @@ public class DialogueManager : MonoBehaviour
 
     private IEnumerator coroutine;
 
+    public GameObject lastSentenceObject;
+    public TextMeshProUGUI lastName;
+    public TextMeshProUGUI lastSentence;
+
     #region States
-    public bool _listening;
-    //public bool _waiting;
-    public bool _answering;
+    [HideInInspector] public bool _listening;
+    [HideInInspector] public bool isTyping;
+    [HideInInspector] public bool _answering;
     #endregion
 
     private void Awake()
@@ -44,6 +48,8 @@ public class DialogueManager : MonoBehaviour
         _listening = true;
         _answering = false;
 
+        lastSentenceObject.SetActive(false);
+        
         ButtonScrollList.SetActive(false);
         dialogueText.enabled = true;
 
@@ -61,11 +67,13 @@ public class DialogueManager : MonoBehaviour
             nameImage.enabled = true;
             nameText.enabled = true;
             nameText.text = dialogue.name;
+            lastName.text = dialogue.name;
         }
         else
         {
             nameImage.enabled = false;
             nameText.enabled = false;
+            lastName.text = dialogue.name;
         }
 
         sentences.Clear();
@@ -80,27 +88,81 @@ public class DialogueManager : MonoBehaviour
         DisplayNextSentence();
     }
 
+    private string sentence;
+    private string tempSentence;
+
     public void DisplayNextSentence()
     {
-        if (sentences.Count == 0)
+        if (!isTyping)
         {
-            EndDialogue();
-            return;
-        }
+            if (sentences.Count == 0)
+            {
+                EndDialogue();
+                return;
+            }
         
-        string sentence = sentences.Dequeue();
+            sentence = sentences.Dequeue();
 
-        if (sentence != "")
-        {
-            animator.SetBool("IsOpen", true);
-            dialogueText.enabled = true;
-            StopAllCoroutines();
-            StartCoroutine(TypeSentence(sentence));
+            if (sentence != "")
+            {
+                animator.SetBool("IsOpen", true);
+                dialogueText.enabled = true;
+                StopAllCoroutines();
+                StartCoroutine(TypeSentence(sentence));
+            }
+            else
+            {
+                animator.SetBool("IsOpen", false);
+                dialogueText.enabled = false;
+            }
         }
         else
         {
-            animator.SetBool("IsOpen", false);
-            dialogueText.enabled = false;
+            StopAllCoroutines();
+            isTyping = false;
+
+            bool tempBold = false;
+            bool tempItalics = false;
+
+            foreach (char character in sentence.ToCharArray())
+            {
+                if (Equals(character, emphasisCharacter))
+                {
+                    tempSentence += "";
+                }
+                else if (Equals(character, boldCharacter))
+                {
+                    if (!tempBold)
+                    {
+                        tempSentence += "<b>";
+                    }
+                    else {
+                        tempSentence += "</b>";
+                    }
+                    tempBold = !tempBold;
+                }
+                else if (Equals(character, italicCharacter))
+                {
+                    if (!tempItalics)
+                    {
+                        tempSentence += "<i>";
+                    }
+                    else
+                    {
+                        tempSentence += "</i>";
+                    }
+                    tempItalics = !tempItalics;
+                }
+                else
+                {
+                    tempSentence += character;
+                }
+            }
+
+            dialogueText.text = tempSentence;
+            lastSentence.text = tempSentence;
+
+            tempSentence = "";
         }
     }
 
@@ -112,35 +174,78 @@ public class DialogueManager : MonoBehaviour
     private int letterCounter = 0;
     private string tempText;
 
-    // private bool listening;
+    private string tempChar;
+
+    [Tooltip("Character used turn bold text off or on./r/nWARNING: This character will not be displayed.")] public char boldCharacter;
+    [Tooltip("Character used to turn italicized text on or off./r/nWARNING: This character will not be displayed.")] public char italicCharacter;
+    [Tooltip("Character used to create a pause during dialogue./r/nWARNING: This character will not be displayed.")] public char emphasisCharacter;
+    [Tooltip("How long the pause is during emphasis.")] public float emphasisTime = .5f;
+
+    private bool boldOn;
+    private bool italicsOn;
 
     IEnumerator TypeSentence(string sentence)
     {
         letterCounter = 0;
         tempText = "";
+        boldOn = false;
+        italicsOn = false;
+        isTyping = true;
         
-        while (letterCounter < sentence.Length)
+        while ((letterCounter < sentence.Length) && isTyping)
         {
-            if (colorFloat < 1.0f)
+            if (sentence[letterCounter] == emphasisCharacter)
+            {
+                letterCounter++;
+                yield return new WaitForSeconds(emphasisTime);
+            }
+            else if (sentence[letterCounter] == boldCharacter)
+            {
+                boldOn = !boldOn;
+                letterCounter++;
+            }
+            else if (sentence[letterCounter] == italicCharacter)
+            {
+                italicsOn = !italicsOn;
+                letterCounter++;
+            }
+            else if (colorFloat < 1.0f)
             {
                 colorFloat += Time.deltaTime * fadeSpeedMultiplier;
                 colorInt = (int)(Mathf.Lerp(0.0f, 1.0f, colorFloat) * 255.0f);
                 dialogueText.text = tempText;
-                dialogueText.text += "<color=#FFFFFF" + string.Format("{0:X2}", colorInt) + ">" + sentence[letterCounter] + "</color>";
+                tempChar = sentence[letterCounter] + "";
+
+                if (boldOn)
+                {
+                    tempChar = "<b>" + tempChar + "</b>";
+                }
+                if (italicsOn)
+                {
+                    tempChar = "<i>" + tempChar + "</i>";
+                }
+
+                tempChar = "<color=#FFFFFF" + string.Format("{0:X2}", colorInt) + ">" + tempChar + "</color>";
+
+                dialogueText.text += tempChar;
             }
             else
             {
                 colorFloat = 0.1f;
-                tempText += sentence[letterCounter];
+                tempText += tempChar;
                 letterCounter++;
             }
             yield return null;
         }
+
+        DisplayNextSentence();
     }
 
     private void EndDialogue()
     {
         _listening = false;
+
+        lastSentenceObject.SetActive(false);
 
         if (functions.Length == 0)
         {
@@ -173,5 +278,7 @@ public class DialogueManager : MonoBehaviour
         _answering = true;
 
         listController.GenerateList(choices);
+
+        lastSentenceObject.SetActive(true);
     }
 }

@@ -14,7 +14,7 @@ public class Dialogue
 
     [Tooltip("Name of the NPC.")] public string name;
 
-    [Tooltip("Affects the rate at which dialogue text appears.")] public float typeSpeed = 12f;
+    [Tooltip("Affects the rate at which dialogue text appears.")] public float typeSpeed = 15f;
     
     [Tooltip("The position that the player cam will rotate towards.")] public Transform lookPoint;
 
