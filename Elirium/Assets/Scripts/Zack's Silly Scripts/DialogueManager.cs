@@ -1,11 +1,15 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;
 using TMPro;
 
 public class DialogueManager : MonoBehaviour
 {
+    private Dialogue.FunctionCalls[] functions;
+    private DialogueManagerAux dmAux;
 
+    public Image nameImage;
     public TextMeshProUGUI nameText;
     public TextMeshProUGUI dialogueText;
 
@@ -15,9 +19,18 @@ public class DialogueManager : MonoBehaviour
 
     PlayerControlZ player;
 
+    private IEnumerator coroutine;
+
+    #region States
+    public bool _listening;
+    //public bool _waiting;
+    public bool _answering;
+    #endregion
+
     private void Awake()
     {
         player = FindObjectOfType<PlayerControlZ>();
+        dmAux = FindObjectOfType<DialogueManagerAux>();
     }
 
     // Start is called before the first frame update
@@ -28,11 +41,32 @@ public class DialogueManager : MonoBehaviour
 
     public void StartDialogue(Dialogue dialogue)
     {
+        _listening = true;
+        _answering = false;
+
+        ButtonScrollList.SetActive(false);
+        dialogueText.enabled = true;
+
+        dmAux.DoThing(0.35f, dialogue.lookPoint);
+
+        functions = dialogue.Functions;
+
         player.playerCanMoveInternal = false;
+        Cursor.lockState = CursorLockMode.None; Cursor.visible = true;
 
         animator.SetBool("IsOpen", true);
 
-        nameText.text = dialogue.name;
+        if (dialogue.name != "")
+        {
+            nameImage.enabled = true;
+            nameText.enabled = true;
+            nameText.text = dialogue.name;
+        }
+        else
+        {
+            nameImage.enabled = false;
+            nameText.enabled = false;
+        }
 
         sentences.Clear();
 
@@ -40,6 +74,8 @@ public class DialogueManager : MonoBehaviour
         {
             sentences.Enqueue(sentence);
         }
+
+        fadeSpeedMultiplier = dialogue.typeSpeed;
 
         DisplayNextSentence();
     }
@@ -53,20 +89,30 @@ public class DialogueManager : MonoBehaviour
         }
         
         string sentence = sentences.Dequeue();
-        StopAllCoroutines();
-        StartCoroutine(TypeSentence(sentence));
-        
+
+        if (sentence != "")
+        {
+            animator.SetBool("IsOpen", true);
+            dialogueText.enabled = true;
+            StopAllCoroutines();
+            StartCoroutine(TypeSentence(sentence));
+        }
+        else
+        {
+            animator.SetBool("IsOpen", false);
+            dialogueText.enabled = false;
+        }
     }
 
     private string letter1;
     private string letter2;
-    [SerializeField] private float fadeSpeedMultiplier = 4.5f;
+    private float fadeSpeedMultiplier;
     private float colorFloat = 0;
     private int colorInt;
     private int letterCounter = 0;
     private string tempText;
 
-    private bool listening;
+    // private bool listening;
 
     IEnumerator TypeSentence(string sentence)
     {
@@ -94,7 +140,38 @@ public class DialogueManager : MonoBehaviour
 
     private void EndDialogue()
     {
-        animator.SetBool("IsOpen", false);
-        player.playerCanMoveInternal = true;
+        _listening = false;
+
+        if (functions.Length == 0)
+        {
+            animator.SetBool("IsOpen", false);
+            player.playerCanMoveInternal = true;
+            Cursor.lockState = CursorLockMode.Locked; Cursor.visible = false;
+        }
+        else
+        {
+            foreach (Dialogue.FunctionCalls thing in functions)
+            {
+                if (thing.gameObject != null && thing.methodName != "")
+                {
+                    thing.gameObject.SendMessage(thing.methodName);
+                }
+            }
+        }
+    }
+
+    public GameObject ButtonScrollList;
+    public ButtonListControl listController;
+
+    public void SetButtons(Choice[] choices)
+    {
+        ButtonScrollList.SetActive(true);
+        nameImage.enabled = false;
+        nameText.enabled = false;
+        dialogueText.enabled = false;
+        _listening = false;
+        _answering = true;
+
+        listController.GenerateList(choices);
     }
 }

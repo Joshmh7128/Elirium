@@ -233,6 +233,7 @@ public class PlayerControlZ : MonoBehaviour
 
             #region Move Update
             isGrounded = Physics.SphereCast(groundCheck.position + Vector3.up, 0.49f, Vector3.down, out groundHit, 1, groundMask);
+            
             Physics.Raycast(groundHit.point + new Vector3(0, .1f, 0), Vector3.down, out groundHit, 0.15f, groundMask);
             isSliding = false;
             if (isGrounded && movement.y <= 0)
@@ -258,10 +259,10 @@ public class PlayerControlZ : MonoBehaviour
 
             wasGrounded = isGrounded;
 
-            if (Physics.CheckSphere(ceilingCheck.position, 0.05f, groundMask) && movement.y > 0)
+            /*if (Physics.CheckSphere(ceilingCheck.position, 0.05f, groundMask) && movement.y > 0)
             {
                 movement.y = 0;
-            }
+            }*/
             ProcessMovementInput();
             #endregion
         }
@@ -300,8 +301,8 @@ public class PlayerControlZ : MonoBehaviour
             movement.x = horizontalMomentum.x * speedInternal;
             movement.z = horizontalMomentum.z * speedInternal;
         }
-
-        if (rewiredInput.GetAxis(jumpAxis) != 0 && isGrounded && movement.y < 0 && !isSliding && playerCanMoveInternal)
+        
+        if (rewiredInput.GetAxis(jumpAxis) > 0 && isGrounded && movement.y < 0 && !isSliding && playerCanMoveInternal)
         {
             movement.y = Mathf.Sqrt(jumpHeightInternal * -2f * gravity);
         }
