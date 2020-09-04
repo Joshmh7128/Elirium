@@ -12,7 +12,7 @@ public class CameraScript : MonoBehaviour
     [Range(0,15)]public float throwPower = 5;
 
     //setup our ray to detect anything aside from the player
-    private LayerMask layerMask;
+    public LayerMask layerMask;
     private RaycastHit hit;            //define our raycast
 
     #region Some Vectors
@@ -26,8 +26,8 @@ public class CameraScript : MonoBehaviour
 
     private void Awake()
     {
-        layerMask = 1<<9; //get bitmap
-        layerMask = ~layerMask; //invert the layermask
+        //layerMask = 1<<9; //get bitmap
+        //layerMask = ~layerMask; //invert the layermask
 
         dialogueManager = FindObjectOfType<DialogueManager>();
     }
@@ -43,7 +43,7 @@ public class CameraScript : MonoBehaviour
                 isHolding = false;
                 _heldOrb = null;
             }
-            else if (Physics.SphereCast(transform.position, 0.5f, transform.TransformDirection(Vector3.forward), out hit, 4.5f, layerMask))
+            else if (Physics.SphereCast(transform.position - transform.TransformDirection(Vector3.forward) / 2, 0.5f, transform.TransformDirection(Vector3.forward), out hit, 5f, layerMask))
             {
                 if (hit.collider.GetComponent<Orb_PuzzleScript>())
                 {
@@ -54,7 +54,6 @@ public class CameraScript : MonoBehaviour
                 else if (hit.collider.GetComponent<Interactable>())
                 {
                     hit.collider.GetComponent<Interactable>().Interact();
-                    StartCoroutine(MoveCamera(0.35f, hit));
                 }
             }
         }
@@ -65,30 +64,9 @@ public class CameraScript : MonoBehaviour
             isHolding = false;
             _heldOrb = null;
         }
-        else if ((Input.GetKeyDown(KeyCode.E) || Input.GetKeyDown(KeyCode.Mouse0)) && !player.playerCanMoveInternal)
+        else if ((Input.GetKeyDown(KeyCode.E) || Input.GetKeyDown(KeyCode.Mouse0)) &&  dialogueManager._listening)
         {
             dialogueManager.DisplayNextSentence();
         }
-    }
-
-    private IEnumerator MoveCamera(float delay, RaycastHit slap)
-    {
-        yield return new WaitForSeconds(0.1f);
-
-        while (!player.isGrounded)
-        {
-            yield return null;
-        }
-        
-        yield return new WaitForSeconds(delay - 0.1f);
-
-        tempVector = Vector3.Normalize(slap.collider.transform.GetChild(0).transform.position - transform.position);
-        tempVectorHor = Vector3.Normalize(new Vector3(tempVector.x, 0, tempVector.z));
-        tempForward = transform.TransformDirection(Vector3.forward);
-        tempVectorVert = tempForward;
-        tempVectorVert.y = tempVector.y;
-
-        player.targetAngles.y += Vector3.SignedAngle(Vector3.Normalize(new Vector3(tempForward.x, 0, tempForward.z)), tempVectorHor, Vector3.up);
-        player.targetAngles.x -= Vector3.SignedAngle(Vector3.Normalize(tempForward), tempVectorVert, transform.TransformDirection(Vector3.right));
     }
 }
