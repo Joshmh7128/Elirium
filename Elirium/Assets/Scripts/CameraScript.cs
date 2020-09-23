@@ -8,6 +8,7 @@ public class CameraScript : MonoBehaviour
     public bool isHolding; //check to see if we're holding something
     public Transform cameraPos;
 	private Orb_PuzzleScript _heldOrb;
+    private GameObject holdPointPlayer;
 
     [Range(0,15)]public float throwPower = 5;
 
@@ -30,6 +31,7 @@ public class CameraScript : MonoBehaviour
         //layerMask = ~layerMask; //invert the layermask
 
         dialogueManager = FindObjectOfType<DialogueManager>();
+        holdPointPlayer = GameObject.Find("Hold Point Player");
     }
 
     //cast a spherecast forwards and see if we collide with an orb to pickup (or something else that can be interacted with)
@@ -47,9 +49,10 @@ public class CameraScript : MonoBehaviour
             {
                 if (hit.collider.GetComponent<Orb_PuzzleScript>())
                 {
-                    hit.collider.gameObject.GetComponent<Orb_PuzzleScript>().isHeld = !hit.collider.gameObject.GetComponent<Orb_PuzzleScript>().isHeld;
-                    isHolding = !isHolding;
                     _heldOrb = hit.collider.gameObject.GetComponent<Orb_PuzzleScript>();
+                    _heldOrb.isHeld = true;
+                    isHolding = true;
+                    _heldOrb.holdPoint = holdPointPlayer.transform;
                 }
                 else if (hit.collider.GetComponent<Interactable>())
                 {
